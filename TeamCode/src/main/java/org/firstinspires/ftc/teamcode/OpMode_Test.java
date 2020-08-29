@@ -16,6 +16,7 @@ public class OpMode_Test extends OpMode {
         @param enum - special class that represent a group of constants
      */
     private enum States {
+        NONE,
         INIT_STATE,
         LIFT_UP_STATE,
         LIFT_DOWN_STATE,
@@ -37,6 +38,7 @@ public class OpMode_Test extends OpMode {
     public Servo pliers1_servo;
     public Servo pliers2_servo;
     private States CurrentState;
+    private States PreviousState;
     final double PLIERS_ON = 1.0;
     final double PLIERS_OFF = 0.0;
 
@@ -53,6 +55,10 @@ public class OpMode_Test extends OpMode {
 
     public void changeState(States p) {
         CurrentState = p;
+    }
+
+    public void changePrevState(States a) {
+        PreviousState = a;
     }
 
     public void scissor_lift_motors(double power) {
@@ -104,87 +110,76 @@ public class OpMode_Test extends OpMode {
             case INIT_STATE:
                 if(resetHardware()) {
                     sleep(200);
-                    changeState(States.LIFT_UP_STATE);
                 }
-
+                changeState(States.LIFT_DOWN_STATE);
                 break;
 
             case LIFT_UP_STATE:
                 if(gamepad1.left_stick_y > 0) {
                     scissor_lift_motors(1);
-                    changeState(States.LIFT_DOWN_STATE);
                 } else {
                     scissor_lift_motors(0);
-                    changeState(States.INIT_STATE);
                 }
-
+                changeState(States.LIFT_DOWN_STATE);
                 break;
 
             case LIFT_DOWN_STATE:
                 if(gamepad1.left_stick_y < 0) {
                     scissor_lift_motors(-1);
-                    changeState(States.SUCTION_INTAKE_STATE);
                 } else {
                     scissor_lift_motors(0);
-                    changeState(States.LIFT_UP_STATE);
                 }
-
+                changeState(States.SUCTION_INTAKE_STATE);
                 break;
 
             case SUCTION_INTAKE_STATE:
                 if(gamepad1.a) {
                     suction_servos(1);
-                    changeState(States.SUCTION_OUTTAKE_STATE);
                 } else {
                     suction_servos(0);
-                    changeState(States.LIFT_DOWN_STATE);
                 }
+                changeState(States.SUCTION_OUTTAKE_STATE);
                 break;
 
             case SUCTION_OUTTAKE_STATE:
                 if(gamepad1.y) {
                     suction_servos(-1.0);
-                    changeState(States.ARM_EXTENDED_STATE);
                 } else {
                     suction_servos(0.0);
-                    changeState(States.SUCTION_INTAKE_STATE);
                 }
+                changeState(States.ARM_EXTENDED_STATE);
                 break;
 
             case ARM_EXTENDED_STATE:
                 if(gamepad1.right_bumper) {
                     Arm_Servos(1);
-                    changeState(States.ARM_RETRACTED_STATE);
                 } else {
                     Arm_Servos(0);
-                    changeState(States.SUCTION_OUTTAKE_STATE);
                 }
+                changeState(States.ARM_RETRACTED_STATE);
+                break;
 
             case ARM_RETRACTED_STATE:
                 if(gamepad1.left_bumper) {
                     Arm_Servos(-1);
-                    changeState(States.PLIERS_ON_STATE);
                 } else {
                     Arm_Servos(0);
-                    changeState(States.ARM_EXTENDED_STATE);
                 }
+                changeState(States.PLIERS_ON_STATE);
+                break;
 
             case PLIERS_ON_STATE:
                 if(gamepad1.x) {
                     pliers(PLIERS_ON);
-                    changeState(States.PLIERS_OFF_STATE);
-                } else {
-                    changeState(States.ARM_RETRACTED_STATE);
                 }
+                changeState(States.PLIERS_OFF_STATE);
                 break;
 
             case PLIERS_OFF_STATE:
                 if(gamepad1.b) {
                     pliers(PLIERS_OFF);
-                    changeState(States.STOP_STATE);
-                } else {
-                    changeState(States.PLIERS_ON_STATE);
                 }
+                changeState(States.STOP_STATE);
                 break;
 
             case STOP_STATE:
