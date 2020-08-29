@@ -28,6 +28,7 @@ public class OpMode_Test extends OpMode {
         STOP_STATE,
     }
 
+
     public DcMotor scissor_lift_left_motor;
     public DcMotor scissor_lift_right_motor;
     public CRServo suction_servo1;
@@ -36,10 +37,10 @@ public class OpMode_Test extends OpMode {
     public Servo pliers1_servo;
     public Servo pliers2_servo;
     private States CurrentState;
-    final double PLIERS_ON = 1;
-    final double PLIERS_OFF = 0;
+    final double PLIERS_ON = 1.0;
+    final double PLIERS_OFF = 0.0;
 
-    public boolean resetHardware() {
+    public boolean resetHardware() { //chestie fara sens doar ca sa dea true
         scissor_lift_right_motor.setPower(0);
         scissor_lift_left_motor.setPower(0);
         suction_servo1.setPower(0);
@@ -56,7 +57,21 @@ public class OpMode_Test extends OpMode {
 
     public void scissor_lift_motors(double power) {
         scissor_lift_right_motor.setPower(power);
-        scissor_lift_left_motor.setPower(power);
+        scissor_lift_left_motor.setPower(-power);
+    }
+
+    public void suction_servos(double power) {
+        suction_servo1.setPower(power);
+        suction_servo2.setPower(-power);
+    }
+
+    public void Arm_Servos(double power) {
+        expansion_servo.setPower(power);
+    }
+
+    public void pliers(double pos) {
+        pliers1_servo.setPosition(pos);
+        pliers2_servo.setPosition(-pos);
     }
 
     @Override
@@ -74,6 +89,11 @@ public class OpMode_Test extends OpMode {
     }
 
     @Override
+    public void init_loop() {
+        // ceva //
+    }
+
+    @Override
     public void start() {
         changeState(States.INIT_STATE);
     }
@@ -83,35 +103,94 @@ public class OpMode_Test extends OpMode {
         switch(CurrentState) {
             case INIT_STATE:
                 if(resetHardware()) {
-                    sleep(20);
-                } else {
-                    resetHardware();
+                    sleep(200);
+                    changeState(States.LIFT_UP_STATE);
                 }
-                changeState(States.LIFT_UP_STATE);
+
                 break;
 
             case LIFT_UP_STATE:
                 if(gamepad1.left_stick_y > 0) {
                     scissor_lift_motors(1);
+                    changeState(States.LIFT_DOWN_STATE);
                 } else {
                     scissor_lift_motors(0);
+                    changeState(States.INIT_STATE);
                 }
-                changeState(States.LIFT_DOWN_STATE);
+
                 break;
 
             case LIFT_DOWN_STATE:
                 if(gamepad1.left_stick_y < 0) {
                     scissor_lift_motors(-1);
+                    changeState(States.SUCTION_INTAKE_STATE);
                 } else {
                     scissor_lift_motors(0);
+                    changeState(States.LIFT_UP_STATE);
                 }
 
+                break;
 
+            case SUCTION_INTAKE_STATE:
+                if(gamepad1.a) {
+                    suction_servos(1);
+                    changeState(States.SUCTION_OUTTAKE_STATE);
+                } else {
+                    suction_servos(0);
+                    changeState(States.LIFT_DOWN_STATE);
+                }
+                break;
 
+            case SUCTION_OUTTAKE_STATE:
+                if(gamepad1.y) {
+                    suction_servos(-1.0);
+                    changeState(States.ARM_EXTENDED_STATE);
+                } else {
+                    suction_servos(0.0);
+                    changeState(States.SUCTION_INTAKE_STATE);
+                }
+                break;
 
+            case ARM_EXTENDED_STATE:
+                if(gamepad1.right_bumper) {
+                    Arm_Servos(1);
+                    changeState(States.ARM_RETRACTED_STATE);
+                } else {
+                    Arm_Servos(0);
+                    changeState(States.SUCTION_OUTTAKE_STATE);
+                }
+
+            case ARM_RETRACTED_STATE:
+                if(gamepad1.left_bumper) {
+                    Arm_Servos(-1);
+                    changeState(States.PLIERS_ON_STATE);
+                } else {
+                    Arm_Servos(0);
+                    changeState(States.ARM_EXTENDED_STATE);
+                }
+
+            case PLIERS_ON_STATE:
+                if(gamepad1.x) {
+                    pliers(PLIERS_ON);
+                    changeState(States.PLIERS_OFF_STATE);
+                } else {
+                    changeState(States.ARM_RETRACTED_STATE);
+                }
+                break;
+
+            case PLIERS_OFF_STATE:
+                if(gamepad1.b) {
+                    pliers(PLIERS_OFF);
+                    changeState(States.STOP_STATE);
+                } else {
+                    changeState(States.PLIERS_ON_STATE);
+                }
+                break;
+
+            case STOP_STATE:
+                resetHardware();
+                changeState(States.INIT_STATE);
+                break;
         }
     }
-
-
-
 }
