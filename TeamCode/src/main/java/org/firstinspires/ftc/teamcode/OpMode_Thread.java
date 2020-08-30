@@ -97,17 +97,20 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.left_stick_y > 0) {
                             scissor_lift_motors(1);
                         } else {
-                            scissor_lift_motors(0);
+                            changeState(States.STOP_STATE);
                         }
-                        changeState(States.LIFT_DOWN_STATE);
                         break;
 
                     case LIFT_DOWN_STATE:
                         if(gamepad1.left_stick_y < 0) {
                             scissor_lift_motors(-1);
                         } else {
-                            scissor_lift_motors(0);
+                           changeState(States.STOP_STATE);
                         }
+                        break;
+
+                    case STOP_STATE:
+                        scissor_lift_motors(0);
                         break;
                 }
             }
@@ -119,20 +122,24 @@ public class OpMode_Thread extends OpMode {
             public void run() {
                 switch (CurrentState) {
                     case SUCTION_INTAKE_STATE:
-                        if(gamepad1.a) {
+                        if (gamepad1.a) {
                             suction_servos(1);
                         } else {
-                            suction_servos(0);
+                            changeState(States.STOP_STATE);
                         }
-                        changeState(States.SUCTION_OUTTAKE_STATE);
+
                         break;
 
                     case SUCTION_OUTTAKE_STATE:
                         if(gamepad1.y) {
                             suction_servos(-1.0);
                         } else {
-                            suction_servos(0.0);
+                            changeState(States.STOP_STATE);
                         }
+                        break;
+
+                    case STOP_STATE:
+                        suction_servos(0);
                         break;
                 }
             }
@@ -146,17 +153,20 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.right_bumper) {
                             Arm_Servos(1);
                         } else {
-                            Arm_Servos(0);
+                            changeState(States.STOP_STATE);
                         }
-                        changeState(States.ARM_RETRACTED_STATE);
                         break;
 
                     case ARM_RETRACTED_STATE:
                         if(gamepad1.left_bumper) {
                             Arm_Servos(-1);
                         } else {
-                            Arm_Servos(0);
+                            changeState(States.STOP_STATE);
                         }
+                        break;
+
+                    case STOP_STATE:
+                        Arm_Servos(0);
                         break;
                 }
             }
