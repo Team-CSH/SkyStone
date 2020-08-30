@@ -108,7 +108,6 @@ public class OpMode_Thread extends OpMode {
                         } else {
                             scissor_lift_motors(0);
                         }
-                        changeState(States.SUCTION_INTAKE_STATE);
                         break;
                 }
             }
@@ -134,7 +133,6 @@ public class OpMode_Thread extends OpMode {
                         } else {
                             suction_servos(0.0);
                         }
-                        changeState(States.ARM_EXTENDED_STATE);
                         break;
                 }
             }
@@ -159,7 +157,6 @@ public class OpMode_Thread extends OpMode {
                         } else {
                             Arm_Servos(0);
                         }
-                        changeState(States.PLIERS_ON_STATE);
                         break;
                 }
             }
@@ -180,7 +177,6 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.b) {
                             pliers(PLIERS_OFF);
                         }
-                        changeState(States.STOP_STATE);
                         break;
                 }
             }
