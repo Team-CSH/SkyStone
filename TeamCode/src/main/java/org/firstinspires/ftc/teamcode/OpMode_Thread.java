@@ -88,6 +88,7 @@ public class OpMode_Thread extends OpMode {
 
     @Override
     public void loop() {
+        changeState(States.LIFT_UP_STATE);
         Thread lift = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -185,16 +186,6 @@ public class OpMode_Thread extends OpMode {
             }
         });
 
-        Thread stop = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                switch (CurrentState) {
-                    case STOP_STATE:
-                        resetHardware();
-                        changeState(States.INIT_STATE);
-                }
-            }
-        });
 
         //starting the threads
         lift.start();
