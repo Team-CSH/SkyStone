@@ -88,10 +88,11 @@ public class OpMode_Thread extends OpMode {
 
     @Override
     public void loop() {
-        changeState(States.LIFT_UP_STATE);
+        changeState(States.STOP_STATE);
         Thread lift = new Thread(new Runnable() {
             @Override
             public void run() {
+                changeState(States.STOP_STATE);
                 switch(CurrentState) {
                     case LIFT_UP_STATE:
                         if(gamepad1.left_stick_y > 0) {
@@ -120,6 +121,7 @@ public class OpMode_Thread extends OpMode {
         Thread suction = new Thread(new Runnable() {
             @Override
             public void run() {
+                changeState(States.STOP_STATE);
                 switch (CurrentState) {
                     case SUCTION_INTAKE_STATE:
                         if (gamepad1.a) {
@@ -148,6 +150,7 @@ public class OpMode_Thread extends OpMode {
         Thread arm = new Thread(new Runnable() {
             @Override
             public void run() {
+                changeState(States.STOP_STATE);
                 switch (CurrentState) {
                     case ARM_EXTENDED_STATE:
                         if(gamepad1.right_bumper) {
@@ -175,6 +178,7 @@ public class OpMode_Thread extends OpMode {
         Thread pliers = new Thread(new Runnable() {
             @Override
             public void run() {
+                changeState(States.STOP_STATE);
                 switch (CurrentState) {
                     case PLIERS_ON_STATE:
                         if(gamepad1.x) {
