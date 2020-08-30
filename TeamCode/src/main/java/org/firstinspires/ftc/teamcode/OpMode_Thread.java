@@ -11,6 +11,18 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp(name = "Thread_TestOPMODE")
 public class OpMode_Thread extends OpMode {
 
+    private enum States {
+        INIT_STATE,
+        LIFT_UP_STATE,
+        LIFT_DOWN_STATE,
+        SUCTION_INTAKE_STATE,
+        SUCTION_OUTTAKE_STATE,
+        ARM_EXTENDED_STATE,
+        ARM_RETRACTED_STATE,
+        PLIERS_ON_STATE,
+        PLIERS_OFF_STATE,
+        STOP_STATE,
+    }
 
     public DcMotor scissor_lift_left_motor;
     public DcMotor scissor_lift_right_motor;
@@ -19,6 +31,7 @@ public class OpMode_Thread extends OpMode {
     public CRServo expansion_servo;
     public Servo pliers1_servo;
     public Servo pliers2_servo;
+    private States CurrentState;
     final double PLIERS_ON = 1.0;
     final double PLIERS_OFF = 0.0;
 
@@ -52,6 +65,10 @@ public class OpMode_Thread extends OpMode {
         pliers2_servo.setPosition(-pos);
     }
 
+    public void changeState(States p) {
+        CurrentState = p;
+    }
+
     @Override
     public void init() {
         //MOTORS AND HARDWARE MAPS
@@ -71,99 +88,120 @@ public class OpMode_Thread extends OpMode {
 
     @Override
     public void loop() {
-        Thread lift_up_thread = new Thread(new Runnable() {
+        Thread lift = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(gamepad1.left_stick_y > 0) {
-                    scissor_lift_motors(1);
-                } else {
-                    scissor_lift_motors(0);
+                switch(CurrentState) {
+                    case LIFT_UP_STATE:
+                        if(gamepad1.left_stick_y > 0) {
+                            scissor_lift_motors(1);
+                        } else {
+                            scissor_lift_motors(0);
+                        }
+                        changeState(States.LIFT_DOWN_STATE);
+                        break;
+
+                    case LIFT_DOWN_STATE:
+                        if(gamepad1.left_stick_y < 0) {
+                            scissor_lift_motors(-1);
+                        } else {
+                            scissor_lift_motors(0);
+                        }
+                        changeState(States.SUCTION_INTAKE_STATE);
+                        break;
                 }
             }
         });
 
-        Thread lift_down_thread = new Thread(new Runnable() {
+
+        Thread suction = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(gamepad1.left_stick_y < 0) {
-                    scissor_lift_motors(-1);
-                } else {
-                    scissor_lift_motors(0);
+                switch (CurrentState) {
+                    case SUCTION_INTAKE_STATE:
+                        if(gamepad1.a) {
+                            suction_servos(1);
+                        } else {
+                            suction_servos(0);
+                        }
+                        changeState(States.SUCTION_OUTTAKE_STATE);
+                        break;
+
+                    case SUCTION_OUTTAKE_STATE:
+                        if(gamepad1.y) {
+                            suction_servos(-1.0);
+                        } else {
+                            suction_servos(0.0);
+                        }
+                        changeState(States.ARM_EXTENDED_STATE);
+                        break;
                 }
             }
         });
 
-        Thread suction_intake = new Thread(new Runnable() {
+        Thread arm = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(gamepad1.a) {
-                    suction_servos(1);
-                } else {
-                    suction_servos(0);
+                switch (CurrentState) {
+                    case ARM_EXTENDED_STATE:
+                        if(gamepad1.right_bumper) {
+                            Arm_Servos(1);
+                        } else {
+                            Arm_Servos(0);
+                        }
+                        changeState(States.ARM_RETRACTED_STATE);
+                        break;
+
+                    case ARM_RETRACTED_STATE:
+                        if(gamepad1.left_bumper) {
+                            Arm_Servos(-1);
+                        } else {
+                            Arm_Servos(0);
+                        }
+                        changeState(States.PLIERS_ON_STATE);
+                        break;
                 }
             }
         });
 
-        Thread suction_outtake = new Thread(new Runnable() {
+        Thread pliers = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(gamepad1.y) {
-                    suction_servos(-1.0);
-                } else {
-                    suction_servos(0.0);
+                switch (CurrentState) {
+                    case PLIERS_ON_STATE:
+                        if(gamepad1.x) {
+                            pliers(PLIERS_ON);
+                        }
+                        changeState(States.PLIERS_OFF_STATE);
+                        break;
+
+                    case PLIERS_OFF_STATE:
+                        if(gamepad1.b) {
+                            pliers(PLIERS_OFF);
+                        }
+                        changeState(States.STOP_STATE);
+                        break;
                 }
             }
         });
 
-        Thread arm_extended = new Thread(new Runnable() {
+        Thread stop = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(gamepad1.right_bumper) {
-                    Arm_Servos(1);
-                } else {
-                    Arm_Servos(0);
-                }
-            }
-        });
-
-        Thread arm_retracted = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if(gamepad1.left_bumper) {
-                    Arm_Servos(-1);
-                } else {
-                    Arm_Servos(0);
-                }
-            }
-        });
-
-        Thread pliers_on = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if(gamepad1.x) {
-                    pliers(PLIERS_ON);
-                }
-            }
-        });
-
-        Thread pliers_off = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if(gamepad1.b) {
-                    pliers(PLIERS_OFF);
+                switch (CurrentState) {
+                    case STOP_STATE:
+                        resetHardware();
+                        changeState(States.INIT_STATE);
                 }
             }
         });
 
         //starting the threads
-        lift_up_thread.start();
-        lift_down_thread.start();
-        suction_intake.start();
-        suction_outtake.start();
-        arm_extended.start();
-        arm_retracted.start();
-        pliers_on.start();
-        pliers_off.start();
+        lift.start();
+        suction.start();
+        arm.start();
+        pliers.start();
+
 
         /* INTREBARE: Oare ar trebui sa folosesc si .join() ca sa astepte a un thread sa moara , si sa fie un fel de memory cleaner? sau act like one */
     }
