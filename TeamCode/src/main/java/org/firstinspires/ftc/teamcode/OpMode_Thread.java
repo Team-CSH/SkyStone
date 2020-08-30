@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import java.util.ArrayList;
-import java.util.List;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -12,7 +10,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 public class OpMode_Thread extends OpMode {
 
     private enum States {
-        INIT_STATE,
         LIFT_UP_STATE,
         LIFT_DOWN_STATE,
         SUCTION_INTAKE_STATE,
@@ -31,11 +28,14 @@ public class OpMode_Thread extends OpMode {
     public CRServo expansion_servo;
     public Servo pliers1_servo;
     public Servo pliers2_servo;
-    private States CurrentState;
+    public States LiftStates;
+    public States SuctionStates;
+    public States ArmStates;
+    public States PliersStates;
     final double PLIERS_ON = 1.0;
     final double PLIERS_OFF = 0.0;
 
-    public boolean resetHardware() { //chestie fara sens doar ca sa dea true
+    public void resetHardware() { //chestie fara sens doar ca sa dea true
         scissor_lift_right_motor.setPower(0);
         scissor_lift_left_motor.setPower(0);
         suction_servo1.setPower(0);
@@ -43,7 +43,6 @@ public class OpMode_Thread extends OpMode {
         expansion_servo.setPower(0);
         pliers1_servo.setPosition(PLIERS_OFF);
         pliers2_servo.setPosition(PLIERS_OFF);
-        return true;
     }
 
     public void scissor_lift_motors(double power) {
@@ -65,8 +64,8 @@ public class OpMode_Thread extends OpMode {
         pliers2_servo.setPosition(-pos);
     }
 
-    public void changeState(States p) {
-        CurrentState = p;
+    public void changeState(States futureState, States ActualState) {
+        ActualState = futureState;
     }
 
     @Override
@@ -88,17 +87,16 @@ public class OpMode_Thread extends OpMode {
 
     @Override
     public void loop() {
-        changeState(States.STOP_STATE);
         Thread lift = new Thread(new Runnable() {
             @Override
             public void run() {
-                changeState(States.STOP_STATE);
-                switch(CurrentState) {
+                changeState(LiftStates, States.STOP_STATE);
+                switch(LiftStates) {
                     case LIFT_UP_STATE:
-                        if(gamepad1.left_stick_y > 0) {
-                            scissor_lift_motors(1);
+                        if(gamepad1.left_stick_y > 0) { //IN CAZ CA ASTA E TRUE, FUNCTIA DE SCISSORS ESTE RESPECTATA, ALTFEL, CHANGE THE STATE IN
+                            scissor_lift_motors(1); // IN LIFT DOWN, IAR DACA NICI INSTRUCTIUNEA DE LA IF-UL DE ACOLO NU ESTE RESPECTATA, TRECEM IN STOP STATE
                         } else {
-                            changeState(States.STOP_STATE);
+                            changeState(LiftStates ,States.LIFT_DOWN_STATE);
                         }
                         break;
 
@@ -106,7 +104,7 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.left_stick_y < 0) {
                             scissor_lift_motors(-1);
                         } else {
-                           changeState(States.STOP_STATE);
+                           changeState(LiftStates ,States.STOP_STATE);
                         }
                         break;
 
@@ -121,13 +119,13 @@ public class OpMode_Thread extends OpMode {
         Thread suction = new Thread(new Runnable() {
             @Override
             public void run() {
-                changeState(States.STOP_STATE);
-                switch (CurrentState) {
+                changeState(SuctionStates, States.STOP_STATE);
+                switch (SuctionStates) {
                     case SUCTION_INTAKE_STATE:
                         if (gamepad1.a) {
                             suction_servos(1);
                         } else {
-                            changeState(States.STOP_STATE);
+                            changeState(SuctionStates ,States.SUCTION_OUTTAKE_STATE);
                         }
 
                         break;
@@ -136,7 +134,7 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.y) {
                             suction_servos(-1.0);
                         } else {
-                            changeState(States.STOP_STATE);
+                            changeState(SuctionStates, States.STOP_STATE);
                         }
                         break;
 
@@ -150,13 +148,13 @@ public class OpMode_Thread extends OpMode {
         Thread arm = new Thread(new Runnable() {
             @Override
             public void run() {
-                changeState(States.STOP_STATE);
-                switch (CurrentState) {
+                changeState(ArmStates , States.STOP_STATE);
+                switch (ArmStates) {
                     case ARM_EXTENDED_STATE:
                         if(gamepad1.right_bumper) {
                             Arm_Servos(1);
                         } else {
-                            changeState(States.STOP_STATE);
+                            changeState(ArmStates ,States.ARM_RETRACTED_STATE);
                         }
                         break;
 
@@ -164,7 +162,7 @@ public class OpMode_Thread extends OpMode {
                         if(gamepad1.left_bumper) {
                             Arm_Servos(-1);
                         } else {
-                            changeState(States.STOP_STATE);
+                            changeState(ArmStates ,States.STOP_STATE);
                         }
                         break;
 
@@ -178,13 +176,14 @@ public class OpMode_Thread extends OpMode {
         Thread pliers = new Thread(new Runnable() {
             @Override
             public void run() {
-                changeState(States.STOP_STATE);
-                switch (CurrentState) {
+                changeState(PliersStates , States.PLIERS_OFF_STATE);
+                switch (PliersStates) {
                     case PLIERS_ON_STATE:
                         if(gamepad1.x) {
                             pliers(PLIERS_ON);
+                        } else {
+                            changeState(PliersStates , States.PLIERS_OFF_STATE);
                         }
-                        changeState(States.PLIERS_OFF_STATE);
                         break;
 
                     case PLIERS_OFF_STATE:
@@ -203,6 +202,15 @@ public class OpMode_Thread extends OpMode {
         arm.start();
         pliers.start();
 
+        
+        try {
+            lift.join();
+            suction.join();
+            arm.join();
+            pliers.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         /* INTREBARE: Oare ar trebui sa folosesc si .join() ca sa astepte a un thread sa moara , si sa fie un fel de memory cleaner? sau act like one */
     }
