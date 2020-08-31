@@ -64,6 +64,10 @@ public class OpMode_Thread extends OpMode {
         pliers2_servo.setPosition(-pos);
     }
 
+    public double getPower(DcMotor a) {
+        return getPower(a);
+    }
+
     public void changeState(States futureState, States ActualState) {
         ActualState = futureState;
     }
@@ -92,11 +96,21 @@ public class OpMode_Thread extends OpMode {
             public void run() {
                 changeState(LiftStates, States.STOP_STATE);
                 switch(LiftStates) {
+                    case STOP_STATE:
+                        if(gamepad1.left_stick_y > 0) {
+                            changeState(LiftStates, States.LIFT_UP_STATE);
+                        } else if (gamepad1.left_stick_y < 0) {
+                            changeState(LiftStates, States.LIFT_DOWN_STATE);
+                        } else {
+                            scissor_lift_motors(0);
+                        }
+                        break;
+
                     case LIFT_UP_STATE:
                         if(gamepad1.left_stick_y > 0) { //IN CAZ CA ASTA E TRUE, FUNCTIA DE SCISSORS ESTE RESPECTATA, ALTFEL, CHANGE THE STATE IN
                             scissor_lift_motors(1); // IN LIFT DOWN, IAR DACA NICI INSTRUCTIUNEA DE LA IF-UL DE ACOLO NU ESTE RESPECTATA, TRECEM IN STOP STATE
                         } else {
-                            changeState(LiftStates ,States.LIFT_DOWN_STATE);
+                            changeState(LiftStates ,States.STOP_STATE);
                         }
                         break;
 
@@ -106,10 +120,6 @@ public class OpMode_Thread extends OpMode {
                         } else {
                            changeState(LiftStates ,States.STOP_STATE);
                         }
-                        break;
-
-                    case STOP_STATE:
-                        scissor_lift_motors(0);
                         break;
                 }
             }
@@ -121,11 +131,21 @@ public class OpMode_Thread extends OpMode {
             public void run() {
                 changeState(SuctionStates, States.STOP_STATE);
                 switch (SuctionStates) {
+                    case STOP_STATE:
+                        if(gamepad1.a) {
+                            changeState(SuctionStates, States.SUCTION_INTAKE_STATE);
+                        } else if(gamepad1.y) {
+                            changeState(SuctionStates, States.SUCTION_OUTTAKE_STATE);
+                        } else {
+                            suction_servos(0);
+                        }
+                        break;
+
                     case SUCTION_INTAKE_STATE:
                         if (gamepad1.a) {
                             suction_servos(1);
                         } else {
-                            changeState(SuctionStates ,States.SUCTION_OUTTAKE_STATE);
+                            changeState(SuctionStates ,States.STOP_STATE);
                         }
 
                         break;
@@ -138,9 +158,7 @@ public class OpMode_Thread extends OpMode {
                         }
                         break;
 
-                    case STOP_STATE:
-                        suction_servos(0);
-                        break;
+
                 }
             }
         });
@@ -150,11 +168,21 @@ public class OpMode_Thread extends OpMode {
             public void run() {
                 changeState(ArmStates , States.STOP_STATE);
                 switch (ArmStates) {
+                    case STOP_STATE:
+                        if(gamepad1.right_bumper) {
+                            changeState(ArmStates, States.ARM_EXTENDED_STATE);
+                        } else if(gamepad1.left_bumper) {
+                            changeState(ArmStates, States.ARM_RETRACTED_STATE);
+                        } else {
+                            Arm_Servos(0);
+                        }
+                        break;
+
                     case ARM_EXTENDED_STATE:
                         if(gamepad1.right_bumper) {
                             Arm_Servos(1);
                         } else {
-                            changeState(ArmStates ,States.ARM_RETRACTED_STATE);
+                            changeState(ArmStates ,States.STOP_STATE);
                         }
                         break;
 
@@ -166,9 +194,7 @@ public class OpMode_Thread extends OpMode {
                         }
                         break;
 
-                    case STOP_STATE:
-                        Arm_Servos(0);
-                        break;
+
                 }
             }
         });
@@ -189,6 +215,8 @@ public class OpMode_Thread extends OpMode {
                     case PLIERS_OFF_STATE:
                         if(gamepad1.b) {
                             pliers(PLIERS_OFF);
+                        } else {
+                            changeState(PliersStates, States.PLIERS_ON_STATE);
                         }
                         break;
                 }
